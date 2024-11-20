@@ -1,0 +1,56 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load your cleaned customer datasets
+df1 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2009_2010.csv')
+df2 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2010_2011.csv')
+
+# Combine the datasets
+combined_df = pd.concat([df1, df2], ignore_index=True)
+
+# Convert InvoiceDate to datetime
+combined_df['InvoiceDate'] = pd.to_datetime(combined_df['InvoiceDate'])
+
+# Calculate total purchases for each StockCode
+total_purchases = combined_df.groupby('StockCode')['Quantity'].sum().reset_index()
+
+# Calculate recency for each StockCode
+recency_df = combined_df.groupby('StockCode').agg({'InvoiceDate': 'max'}).reset_index()
+recency_df['Recency'] = (combined_df['InvoiceDate'].max() - recency_df['InvoiceDate']).dt.days
+recency_df = recency_df[['StockCode', 'Recency']]
+
+# Merge total purchases and recency into one DataFrame
+insights_df = pd.merge(total_purchases, recency_df, on='StockCode')
+
+# Save the insights to a CSV file
+output_insights_path = '/content/drive/MyDrive/recommendation_insights.csv'
+insights_df.to_csv(output_insights_path, index=False)
+print(f"Recommendation insights saved to: {output_insights_path}")
+
+# Visualize the insights
+plt.figure(figsize=(14, 6))
+
+# Bar plot for Total Purchases for each StockCode
+plt.subplot(1, 2, 1)
+top_n = 10  # Limit to top 10 products
+top_products = insights_df.nlargest(top_n, 'Quantity')
+sns.barplot(data=top_products, x='StockCode', y='Quantity', palette='viridis')
+plt.title(f'Top {top_n} Products by Total Purchases')
+plt.xlabel('StockCode')
+plt.ylabel('Total Purchases')
+plt.xticks(rotation=45)
+
+# Annotate the top product
+top_product = top_products.iloc[0]
+plt.text(0, top_product['Quantity'] + 1, f"{top_product['StockCode']} (Top Product)",
+         color='red', ha='center', va='bottom', fontweight='bold')
+
+# Heatmap for correlation between Total Purchases and Recency
+plt.subplot(1, 2, 2)
+correlation_matrix = insights_df[['Quantity', 'Recency']].corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', center=0)
+plt.title('Correlation Heatmap')
+
+plt.tight_layout()
+plt.show()
