@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import OPTICS
+
+# Load cleaned data
+data_2009_2010 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2009_2010.csv')
+data_2010_2011 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2010_2011.csv')
+
+# Combine datasets
+data = pd.concat([data_2009_2010, data_2010_2011], ignore_index=True)
+
+# Filter out negative quantities
+data = data[data['Quantity'] >= 0]
+
+# Convert InvoiceDate to datetime
+data['InvoiceDate'] = pd.to_datetime(data['InvoiceDate'])
+
+# Sample 5% of data for faster processing
+data_sampled = data.sample(frac=0.05, random_state=42)
+
+# Aggregating purchase data for clustering
+customer_df = data_sampled.groupby('Customer ID').agg({
+    'Quantity': 'sum',
+    'Invoice': 'nunique'
+}).reset_index()
+
+# Apply OPTICS clustering on purchase quantity and frequency with adjusted parameters
+optics_model = OPTICS(min_samples=3, xi=0.02, min_cluster_size=0.01)  # Relaxed parameters
+customer_df['Cluster'] = optics_model.fit_predict(customer_df[['Quantity', 'Invoice']])
+
+# Check cluster distribution before labeling
+print("Cluster distribution before labeling:")
+print(customer_df['Cluster'].value_counts())
+
+# Label clusters (OPTICS assigns -1 for noise points, we will label them as 'Noise')
+customer_df['Cluster'] = customer_df['Cluster'].apply(
+    lambda x: 'High' if x == 1 else 'Low' if x == 0 else 'Noise'
+)
+
+# Check if High cluster is present after labeling
+print("Cluster distribution after labeling:")
+print(customer_df['Cluster'].value_counts())
+
+# Merge clustering results back into the original dataset
+data = data.merge(customer_df[['Customer ID', 'Cluster']], on='Customer ID', how='left')
+
+# Create monthly summary list
+monthly_summary = []
+
+# Loop over each month to find best and worst selling products for each cluster
+for year in [2009, 2010, 2011]:
+    for month in range(1, 13):
+        month_data = data[
+            (data['InvoiceDate'].dt.year == year) &
+            (data['InvoiceDate'].dt.month == month)
+        ]
+
+        if month_data.empty:
+            continue
+
+        # Process each cluster separately
+        for cluster in ['High', 'Low']:
+            cluster_data = month_data[month_data['Cluster'] == cluster]
+
+            if cluster_data.empty:
+                continue
+
+            # Find best and worst-selling products by summing quantities
+            product_sales = cluster_data.groupby('Description')['Quantity'].sum()
+            best_product = product_sales.idxmax()
+            worst_product = product_sales.idxmin()
+            best_quantity = product_sales.max()
+            worst_quantity = product_sales.min()
+
+            # Append results to summary list
+            monthly_summary.append({
+                'Year': year,
+                'Month': month,
+                'Cluster': cluster,
+                'Best Selling Product': best_product,
+                'Best Selling Quantity': best_quantity,
+                'Worst Selling Product': worst_product,
+                'Worst Selling Quantity': worst_quantity
+            })
+
+# Convert summary to DataFrame and save to Google Drive
+monthly_summary_df = pd.DataFrame(monthly_summary)
+output_path = '/content/drive/MyDrive/monthly_best_worst_products_optics_FINAL.csv'
+monthly_summary_df.to_csv(output_path, index=False)
+print(f"Monthly best and worst-selling products saved to: {output_path}")
