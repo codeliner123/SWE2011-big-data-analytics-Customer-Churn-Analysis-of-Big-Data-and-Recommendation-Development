@@ -1,0 +1,8 @@
+
+top_stock_codes = df1.groupby('StockCode')['Quantity'].sum().nlargest(10)
+sns.barplot(x=top_stock_codes.index, y=top_stock_codes.values, palette='Spectral')
+plt.title('Top 10 StockCodes by Quantity Sold (df1)', fontsize=16)
+plt.xlabel('StockCode', fontsize=12)
+plt.ylabel('Total Quantity Sold', fontsize=12)
+plt.xticks(rotation=90)
+plt.show()
