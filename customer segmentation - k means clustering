@@ -1,0 +1,54 @@
+from google.colab import drive
+import pandas as pd
+import datetime as dt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# Mount Google Drive
+drive.mount('/content/drive')
+
+# Load the CSV files
+df1 = pd.read_csv('Year 2009-2010.csv', encoding='ISO-8859-1')
+df2 = pd.read_csv('Year 2010-2011.csv', encoding='ISO-8859-1')
+
+# Combine the dataframes
+combined_df = pd.concat([df1, df2], ignore_index=True)
+
+# Convert 'InvoiceDate' to datetime format
+combined_df['InvoiceDate'] = pd.to_datetime(combined_df['InvoiceDate'])
+
+# Create RFM values
+now = dt.datetime.now()  # Current date
+combined_df['TotalSum'] = combined_df['Quantity'] * combined_df['Price']
+
+# Group by Customer ID to calculate RFM
+rfm = combined_df.groupby('Customer ID').agg({
+    'InvoiceDate': lambda x: (now - x.max()).days,  # Recency
+    'Invoice': 'count',                               # Frequency
+    'TotalSum': 'sum'                                # Monetary
+})
+
+# Rename columns for clarity
+rfm.columns = ['Recency', 'Frequency', 'Monetary']
+
+# Print RFM Data
+print("RFM Data:")
+print(rfm.head())
+
+# Standardize the RFM values
+scaler = StandardScaler()
+rfm_scaled = scaler.fit_transform(rfm)
+
+# K-Means clustering
+kmeans = KMeans(n_clusters=4, random_state=42)
+kmeans.fit(rfm_scaled)
+rfm['Cluster'] = kmeans.labels_
+
+# Print RFM Data with Clusters
+print("\nRFM Data with Clusters:")
+print(rfm.head())
+
+# Save the RFM DataFrame with Clusters to a CSV file in Google Drive
+output_path = '/content/drive/My Drive/rfm_with_clusters.csv'  # Change this path as needed
+rfm.to_csv(output_path)
+print(f"\nRFM data with clusters saved to: {output_path}")
