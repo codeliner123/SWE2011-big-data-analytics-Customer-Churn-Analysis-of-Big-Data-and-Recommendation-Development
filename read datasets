@@ -1,0 +1,11 @@
+import pandas as pd
+
+# Load the CSV files with the specified encoding
+df1 = pd.read_csv('Year 2009-2010.csv', encoding='ISO-8859-1')  # Adjust the filename if necessary
+df2 = pd.read_csv('Year 2010-2011.csv', encoding='ISO-8859-1')
+
+# Check the first few rows of each dataset
+print("Year 2009-2010 CSV File:")
+print(df1.head())
+print("\nYear 2010-2011 CSV File:")
+print(df2.head())
