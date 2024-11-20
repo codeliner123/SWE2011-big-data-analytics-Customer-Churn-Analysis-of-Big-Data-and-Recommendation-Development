@@ -1,0 +1,60 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load your cleaned customer datasets
+df1 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2009_2010.csv')
+df2 = pd.read_csv('/content/drive/MyDrive/cleaned_data_2010_2011.csv')
+
+# Combine the datasets
+combined_df = pd.concat([df1, df2], ignore_index=True)
+
+# Convert InvoiceDate to datetime
+combined_df['InvoiceDate'] = pd.to_datetime(combined_df['InvoiceDate'])
+
+# Derive metrics
+current_date = combined_df['InvoiceDate'].max()
+churn_threshold = current_date - pd.DateOffset(months=6)
+
+# Group by Customer ID to calculate Recency and Frequency
+recency_df = combined_df.groupby('Customer ID').agg({
+    'InvoiceDate': 'max',
+    'Quantity': 'count'
+}).reset_index()
+
+# Rename columns for clarity
+recency_df.columns = ['Customer ID', 'Last Purchase Date', 'Total Purchases']
+
+# Identify churned customers
+recency_df['Churn'] = recency_df['Last Purchase Date'] < churn_threshold
+
+# Summary statistics
+total_customers = recency_df.shape[0]
+churned_customers = recency_df[recency_df['Churn'] == True]
+retained_customers = recency_df[recency_df['Churn'] == False]
+
+# Calculate metrics
+churn_rate = churned_customers.shape[0] / total_customers * 100
+average_recency = (current_date - recency_df['Last Purchase Date']).mean().days
+average_purchases = recency_df['Total Purchases'].mean()
+
+# Print summary metrics
+print(f"Total Customers: {total_customers}")
+print(f"Churned Customers: {churned_customers.shape[0]} ({churn_rate:.2f}%)")
+print(f"Retained Customers: {retained_customers.shape[0]}")
+print(f"Average Recency (days): {average_recency:.2f}")
+print(f"Average Purchases per Customer: {average_purchases:.2f}")
+
+# Visualize churn distribution
+plt.figure(figsize=(10, 5))
+sns.countplot(x='Churn', data=recency_df)
+plt.title('Customer Churn Distribution')
+plt.xlabel('Churn')
+plt.xticks(ticks=[0, 1], labels=['Retained', 'Churned'])
+plt.ylabel('Number of Customers')
+plt.show()
+
+# Optionally save the churn analysis to a CSV file
+output_path = '/content/drive/MyDrive/churn_analysis_detailed.csv'
+recency_df.to_csv(output_path, index=False)
+print(f"Churn analysis saved to: {output_path}")
