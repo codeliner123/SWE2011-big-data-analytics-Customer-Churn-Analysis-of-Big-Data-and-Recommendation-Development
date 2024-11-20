@@ -1,0 +1,51 @@
+import pandas as pd
+
+# Assuming df1 and df2 have already been defined as DataFrames
+# Example: df1 = pd.read_csv('file1.csv'), df2 = pd.read_csv('file2.csv')
+
+# Remove duplicates in df1
+df1 = df1.drop_duplicates()
+
+# Convert 'date' column in df1 to datetime format if it exists
+if 'date' in df1.columns:
+    df1['date'] = pd.to_datetime(df1['date'], errors='coerce')
+
+# Remove any rows with NaN values in df1
+df1 = df1.dropna()
+
+# Reset index after cleaning df1
+df1.reset_index(drop=True, inplace=True)
+
+# Clean df2 similarly
+df2 = df2.drop_duplicates()
+
+# Convert 'date' column in df2 to datetime format if it exists
+if 'date' in df2.columns:
+    df2['date'] = pd.to_datetime(df2['date'], errors='coerce')
+
+# Remove any rows with NaN values in df2
+df2 = df2.dropna()
+
+# Reset index after cleaning df2
+df2.reset_index(drop=True, inplace=True)
+
+# Check the results
+print("Cleaned df1:")
+print(df1.head())
+print("\nCleaned df2:")
+print(df2.head())
+
+
+from google.colab import drive
+
+# Mount Google Drive
+drive.mount('/content/drive')
+
+# Define the paths where you want to save the cleaned datasets
+output_path_df1 = '/content/drive/MyDrive/cleaned_data_2009_2010.csv'  # Change path if needed
+output_path_df2 = '/content/drive/MyDrive/cleaned_data_2010_2011.csv'  # Change path if needed
+
+# Save the cleaned DataFrames to Google Drive
+df1.to_csv(output_path_df1, index=False)
+df2.to_csv(output_path_df2, index=False)
+
