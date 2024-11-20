@@ -1,0 +1,39 @@
+# Convert InvoiceDate to datetime format for both df1 and df2 if not already
+df1['InvoiceDate'] = pd.to_datetime(df1['InvoiceDate'])
+df2['InvoiceDate'] = pd.to_datetime(df2['InvoiceDate'])
+
+# Aggregate sales over time for df1
+time_series_df1 = df1.groupby(df1['InvoiceDate'].dt.to_period('M')).agg({'Quantity': 'sum'}).reset_index()
+time_series_df1['InvoiceDate'] = time_series_df1['InvoiceDate'].dt.to_timestamp()
+
+# Aggregate sales over time for df2
+time_series_df2 = df2.groupby(df2['InvoiceDate'].dt.to_period('M')).agg({'Quantity': 'sum'}).reset_index()
+time_series_df2['InvoiceDate'] = time_series_df2['InvoiceDate'].dt.to_timestamp()
+
+# Plot the dual time series for df1 and df2
+plt.figure(figsize=(10,6))
+
+# Plot for df1
+plt.plot(time_series_df1['InvoiceDate'], time_series_df1['Quantity'], color='purple', linewidth=3, marker='o',
+         markerfacecolor='yellow', markeredgewidth=2, label='df1')
+
+# Plot for df2
+plt.plot(time_series_df2['InvoiceDate'], time_series_df2['Quantity'], color='green', linewidth=3, marker='s',
+         markerfacecolor='orange', markeredgewidth=2, label='df2')
+
+# Title and labels
+plt.title('Sales Quantity Over Time (df1 vs df2)', fontsize=16)
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Quantity Sold', fontsize=12)
+
+# Rotate x-axis labels for better readability
+plt.xticks(rotation=45)
+
+# Add grid for better readability
+plt.grid(True, color='lightgray', linestyle='--')
+
+# Add legend to distinguish between df1 and df2
+plt.legend()
+
+# Show the plot
+plt.show()
