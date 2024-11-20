@@ -1,0 +1,72 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Assuming df1 and df2 are already cleaned and loaded
+# 1. Descriptive Statistics
+print("Descriptive Statistics for df1:")
+print(df1.describe(include='all'))
+print("\nDescriptive Statistics for df2:")
+print(df2.describe(include='all'))
+
+# 2. Data Visualization
+# a. Histograms
+df1['Quantity'].hist(bins=20, alpha=0.7)
+plt.title('Quantity Distribution in df1')
+plt.xlabel('Quantity')
+plt.ylabel('Frequency')
+plt.show()
+
+df2['Quantity'].hist(bins=20, alpha=0.7)
+plt.title('Quantity Distribution in df2')
+plt.xlabel('Quantity')
+plt.ylabel('Frequency')
+plt.show()
+
+# b. Box Plots
+sns.boxplot(x='Country', y='Price', data=df1)
+plt.title('Price Distribution by Country in df1')
+plt.xticks(rotation=45)
+plt.show()
+
+sns.boxplot(x='Country', y='Price', data=df2)
+plt.title('Price Distribution by Country in df2')
+plt.xticks(rotation=45)
+plt.show()
+
+# c. Bar Charts for categorical analysis
+df1['Country'].value_counts().plot(kind='bar')
+plt.title('Number of Sales per Country in df1')
+plt.xlabel('Country')
+plt.ylabel('Number of Sales')
+plt.show()
+
+df2['Country'].value_counts().plot(kind='bar')
+plt.title('Number of Sales per Country in df2')
+plt.xlabel('Country')
+plt.ylabel('Number of Sales')
+plt.show()
+
+# 3. pie chart
+country_sales_df1 = df1.groupby('Country')['Quantity'].sum().nlargest(10)
+plt.pie(country_sales_df1, labels=country_sales_df1.index, autopct='%1.1f%%')
+plt.title('Top 10 Countries by Quantity Sold (df1)')
+plt.show()
+
+# 4. Time Series Analysis
+# Convert InvoiceDate to datetime
+df1['InvoiceDate'] = pd.to_datetime(df1['InvoiceDate'])
+df2['InvoiceDate'] = pd.to_datetime(df2['InvoiceDate'])
+
+# Sales over time
+df1.set_index('InvoiceDate')['Quantity'].resample('M').sum().plot()
+plt.title('Monthly Sales in df1')
+plt.xlabel('Date')
+plt.ylabel('Quantity Sold')
+plt.show()
+
+df2.set_index('InvoiceDate')['Quantity'].resample('M').sum().plot()
+plt.title('Monthly Sales in df2')
+plt.xlabel('Date')
+plt.ylabel('Quantity Sold')
+plt.show()
